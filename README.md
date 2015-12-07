@@ -1,6 +1,6 @@
-# ws - Web-Service 
-WS stands for web service, for the "Danke" RefugeeApp and "Gerne", the HelpersApp
-The BitteSehr WebService for the HelpersApp "Gerne" and the RefugeeApp "Danke".
+# ws - The Web-Service 
+
+"Bitte Sehr" is the name of an web service, implemented in RoR Ruby On Rails, a restful web service endpoint for the ["Danke" RefugeeApp](https://github.com/PrivateHelpers/refugeeapp) and [the HelpersApp "Gerne"](https://github.com/PrivateHelpers/helpersapp).
 
 
 ## Architecture
