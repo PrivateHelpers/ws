@@ -6,3 +6,12 @@
 ## Architecture
 
 ![Overall Architecture](https://raw.githubusercontent.com/PrivateHelpers/doc/master/design/GUI-Paper-Prototype_Architecture.png "Overall Architecture")
+
+
+## See also
+This is part of the [Private Helpers](https://github.com/PrivateHelpers/) initiative.
+
+
+## Changelog
+
+2015-12 Initial Version

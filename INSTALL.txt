@@ -1,0 +1,39 @@
+2015-12-08 first setup and install for an RoR App on Heroku
+	see: https://devcenter.heroku.com/articles/getting-started-with-ruby#set-up
+	
+#
+# Setup System
+###############
+	
+rvm install ruby-2.2.3
+	
+brew install heroku-toolbelt
+
+
+
+clone https://github.com/heroku/ruby-getting-started.git ws
+cd ws
+
+heroku create privatehelpersws
+
+git push heroku master
+
+heroku open
+#	=> https://privatehelpersws.herokuapp.com
+
+# local tests:
+heroku local web
+
+
+# Add or modify code
+# ...
+# then
+# ....
+git commit -a -m"something changed"
+git push heroku master
+
+heroku open
+=> https://privatehelpersws.herokuapp.com/#/tab/favorites
+
+
+
