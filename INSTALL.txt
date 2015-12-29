@@ -1,34 +1,55 @@
 2015-12-08 first setup and install for an RoR App on Heroku
 	see: https://devcenter.heroku.com/articles/getting-started-with-ruby#set-up
-	
+		 https://devcenter.heroku.com/categories/ruby
 #
 # Setup System
 ###############
 	
+# check xcode command line tools
+xcode-select --install
+
+# install ruby
 rvm install ruby-2.2.3
 	
+# install the heroku tools
 brew install heroku-toolbelt
 
+# for local running the app we will later need rails:
+rvm list # => ruby-2.2.3 [ x86_64 ]
+sudo gem install rails # <= rails 4.2.5
 
+# a local web server "puma":
+sudo gem install puma 
 
+# for local running the app we will later need a database:
+# setup database (postgres)
+brew install postgres
+
+############### Startup - demo app ###############
 clone https://github.com/heroku/ruby-getting-started.git ws
 cd ws
 
 heroku create privatehelpersws
 
+
+
+############### Push to Heroku server ###############
 git push heroku master
 
+
+############### View app on Heroku server ###############
 heroku open
 #	=> https://privatehelpersws.herokuapp.com
 
-# local tests:
-heroku local web
 
 
+############### Develop and Push again to Heroku server ###############
 # Add or modify code
-# ...
+# ... e.g. add gems to the Gemfile
+# ....and use: bundle install
 # then
 # ....
+git add .
 git commit -a -m"something changed"
 git push heroku master
 
@@ -36,4 +57,323 @@ heroku open
 => https://privatehelpersws.herokuapp.com/#/tab/favorites
 
 
+############### Debug on Heroku server ###############
+heroku run rails console
 
+
+
+############### Develop and view locally ###############
+
+# For local development with RoR
+# (see also: https://devcenter.heroku.com/articles/getting-started-with-ruby#introduction)
+
+sudo gem install bundler
+
+
+# run the database
+postgres -D /usr/local/var/postgres
+
+
+
+
+# install all the needed gems (with the help of bundler)
+bundle install
+
+
+# migrate database
+bundle exec rake db:create db:migrate
+
+# check for tables/data in database
+psql -h localhost ruby-getting-started_development
+show all;
+\?
+\dt
+select * from widgets;
+\q
+
+
+# local tests:
+heroku local web
+
+
+# which routes are available:
+rake routes
+
+=> ...
+		     Prefix Verb   URI Pattern                 Controller#Action
+		    widgets GET    /widgets(.:format)          widgets#index
+		            POST   /widgets(.:format)          widgets#create
+		 new_widget GET    /widgets/new(.:format)      widgets#new
+		edit_widget GET    /widgets/:id/edit(.:format) widgets#edit
+		     widget GET    /widgets/:id(.:format)      widgets#show
+		            PATCH  /widgets/:id(.:format)      widgets#update
+		            PUT    /widgets/:id(.:format)      widgets#update
+		            DELETE /widgets/:id(.:format)      widgets#destroy
+		       root GET    /                           welcome#index
+	...
+=> open in a webbrowser:
+open http://localhost:5000/widgets
+# why does POST / DELETE NOT WORK??
+
+curl http://localhost:5000/widgets.json
+curl http://localhost:5000/widgets/1.json
+
+
+# GET = retrieve
+curl  -X GET 'http://localhost:5000/widgets/1.json'
+
+# POST = create = save
+curl  -H "Content-Type: application/json"  -X POST 'http://localhost:5000/widgets.json' --data '{"name":"more feedback","description":"still unknown","stock":17}'
+
+# DELETE
+curl  -H "Content-Type: application/json"  -X DELETE 'http://localhost:5000/widgets/14.json' 
+
+
+# UPDATE = PUT 
+curl  -H "Content-Type: application/json"  -X PUT 'http://localhost:5000/widgets/15.json' --data '{"description":"really still unknown?","stock":17}'
+
+
+## optional use rails console
+rails console
+	a=Widget.new
+	a.save!
+
+	   
+#### ROR settings for an API -Application #####
+# in main app "controllers/application_controller.rb"
+	...
+	protect_from_forgery with: :null_session
+	   
+############ FOR RUNNING AJAX/WS ON DIFFERENT SERVER ##################
+#
+# during debugging 
+#   we ran the puma RoR-server on 
+#      port 5000 (rails server) 
+#        or 8000 (heroku local)
+#   we run the AngularJS-Web-App (for easy debugging)
+#      on port 8100 (ionic serve)
+
+#   => we need to set the CORS Headers on server
+	   
+# add in RoR:
+# in main app "controllers/application_controller.rb"
+# 
+	class ApplicationController < ActionController::Base
+	...
+	before_filter  :cors_preflight_check
+	...
+    def cors_set_access_control_headers
+      headers['Access-Control-Allow-Origin'] = '*'
+      headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE, OPTIONS'
+      headers['Access-Control-Request-Method'] = '*'
+      headers['Access-Control-Allow-Headers'] = '*'
+      headers['Access-Control-Max-Age'] = "1728000"
+    end
+	...
+in routes-config "config/routes.rb"
+	...
+	match "*all" => "application#cors_preflight_check", :constraints => { :method => "OPTIONS" }, :via => [:get]
+	...
+# test with
+	curl -I 'http://localhost:5000/widgets/1.json'
+	
+# ALTERNATIVE: see Middleware for CORS
+# https://github.com/cyu/rack-cors
+	
+	
+	
+#################################################
+# CREATING Rails API for Feedback and for users #
+#################################################
+# Note 'id' and 'created_at' 'updated_at' are added by default
+# internally, we add "notes" by admin for all of the entries
+User:
+	email
+	name
+	language 	// preferred language (even if not her/his own)
+	active 		// active YES = not "deleted"
+	admin_notes
+	
+Feedback:
+	title	    // 
+	description // 
+	_user_id	// user with email: uniquename@server.com
+	active 		// YES = not "deleted"
+	admin_notes
+	
+Language:
+	title
+	description
+	admin_notes
+
+Image:
+	url
+	title
+	alt_text
+	admin_notes
+	
+Offer:
+	_user_id
+	approved 	// YES = shown to others
+	_language_id // optional: allow filter by lang
+	title
+	description
+	contact_email
+	contact_person
+	contact_street
+	contact_zip
+	contact_city
+	contact_tel
+	contact_url
+	contact_gps_latitude
+	contact_gps_longitude
+	langugage
+	_images
+	notes
+	active 		// active YES = not "deleted"
+	admin_notes
+
+Category: 		// system = multilanguage, so hard coded on client side
+	title
+	admin_notes
+	
+Tag: // is this ok in just one language ? (search troubles?)
+	key
+	admin_notes
+	
+Info:
+	_language_id // better provide translations for important infos, otherwise fallback to ... ?
+	_category_id // culture or medicine or language
+	_tags 
+	title
+	description
+	description_html
+	_images
+	contact_email
+	contact_person
+	contact_street
+	contact_zip
+	contact_city
+	contact_tel
+	contact_url
+	contact_hours
+	contact_gps_latitude
+	contact_gps_longitude
+	notes
+	active 		// active YES = not "deleted"
+	admin_notes
+
+		
+# 8 Tables needed:
+rails generate scaffold Category title:string admin_notes:text
+rails generate scaffold Feedback title:string description:text user:references active:boolean admin_notes:text
+rails generate scaffold Image url:string title:string alt_text:string admin_notes:text
+rails generate scaffold Info \
+	language:references \
+	category:references \
+	tag:string \
+	title:string \
+	description:text \
+	description_html:text \
+	image:references \
+	contact_email:string \
+	contact_person:string \
+	contact_street:string \
+	contact_zip:string \
+	contact_city:string \
+	contact_tel:string \
+	contact_url:string \
+	contact_hours:string \
+	contact_gps_latitude:decimal \
+	contact_gps_longitude:decimal \
+	notes:text \
+	active:boolean \
+	admin_notes:text
+	
+rails generate scaffold Language title:string description:text admin_notes:text
+
+rails generate scaffold Offer user:references \
+	approved:boolean \
+	language:references \
+	title:string \
+	description:text \
+	contact_email:string  \
+	contact_person:string \
+	contact_street:string \
+	contact_zip:string \
+	contact_city:string \
+	contact_tel:string \
+	contact_url:string \
+	contact_gps_latitude:decimal \
+	contact_gps_longitude:decimal \
+	image:references \
+	notes:text \
+	active:boolean \
+	admin_notes:text
+
+rails generate scaffold Tag key:string admin_notes:text
+rails generate scaffold User email:string name:string language:references active:boolean admin_notes:text
+
+
+
+# file: app/models/user.rb
+class User < ActiveRecord::Base
+  has_many :feedbacks
+end
+
+rake db:migrate
+
+# try it out:
+	rails console
+	reload!
+	Feedback
+	Feedback.all
+
+
+####### add default rows (values) ############
+see db/seeds.rb
+	...
+	langs = Language.create([
+  	{title: "en", description:"English", admin_notes:"created with rake db:seed from file seeds.rb"},
+	....
+
+rake db:seed
+# try it out:
+	rails console  
+	Category.all
+	Tag.all
+	Language.all
+
+
+# on the console we might add demo data to the postges db (local an remote)
+# LOCAL 
+curl  -H "Content-Type: application/json"  -X POST 'http://localhost:5000/feedbacks.json' --data '{"title":"Thank you","description":"but keep improving, please!", "admin_notes":"Inserted by default for fast and easy test"}'
+
+curl  -H "Content-Type: application/json"  -X POST 'http://localhost:5000/feedbacks.json' --data '{"title":"Thank you","description":"but keep improving, please!", "admin_notes":"Inserted by default for fast and easy test"}'
+
+# REMOTE (Heroku Server)
+curl  -H "Content-Type: application/json"  -X POST 'https://privatehelpersws.herokuapp.com/feedbacks.json' --data '{"title":"Thank you","description":"but keep improving, please!", "admin_notes":"Inserted by default for fast and easy test"}'
+
+
+
+# do not forget on heroku server
+# heroku migrate the postgres db online
+heroku run rake db:migrate
+
+# view result in your browser:
+heroku open
+# view log files 
+heroku logs --source app --tail
+
+# file: app/models/parent.rb
+class User < ActiveRecord::Base
+  attr_accessible :email
+  has_many :feedback_messages
+end
+
+# file: app/models/child.rb
+class FeedbackMessage < ActiveRecord::Base
+  attr_accessible :name, :parent_id
+  belongs_to :parent
+end
+	
