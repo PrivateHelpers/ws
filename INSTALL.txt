@@ -372,8 +372,9 @@ heroku logs --source app --tail
 # upload Images
 #################################
 
-# we store IN DB (to keep RESTful !!)
+# we store Images (and their thumbs) IN DB (to keep RESTful !!)
 rails generate migration add_binaryfield_to_image bindata:binary
+rails generate migration add_thunbs_to_image bindata_thumb:binary
 rake db:migrate
 
 
