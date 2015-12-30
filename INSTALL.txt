@@ -355,25 +355,56 @@ curl  -H "Content-Type: application/json"  -X POST 'http://localhost:5000/feedba
 curl  -H "Content-Type: application/json"  -X POST 'https://privatehelpersws.herokuapp.com/feedbacks.json' --data '{"title":"Thank you","description":"but keep improving, please!", "admin_notes":"Inserted by default for fast and easy test"}'
 
 
-
+#################################
 # do not forget on heroku server
+################################
 # heroku migrate the postgres db online
 heroku run rake db:migrate
+heroku run rake db:seed
+
 
 # view result in your browser:
 heroku open
 # view log files 
 heroku logs --source app --tail
 
-# file: app/models/parent.rb
-class User < ActiveRecord::Base
-  attr_accessible :email
-  has_many :feedback_messages
-end
+#################################
+# upload Images
+#################################
 
-# file: app/models/child.rb
-class FeedbackMessage < ActiveRecord::Base
-  attr_accessible :name, :parent_id
-  belongs_to :parent
-end
+# we store IN DB (to keep RESTful !!)
+rails generate migration add_binaryfield_to_image bindata:binary
+rake db:migrate
+
+
+
+# upload an image "trash.jpeg" from a local folder "/tmp/"
+read -r -d '' DATA  <<- EOF
+{ "title": "Trashbin",
+  "description": "A trashbin.",
+  "url":"trash.jpeg",
+  "base64data": "$(base64 /tmp/trash.jpeg)",
+  "admin_notes":"auto-inserted with script from admin" 
+ }
+EOF
+curl  -H "Content-Type: application/json"  \
+      -X POST 'http://localhost:5000/images.json' \
+      --data ''"${DATA}"''
+
+
+# download & test
+curl  http://localhost:5000/thumbs/trash.jpeg > /tmp/tmp_down.jpeg
+open /tmp/tmp_down.jpeg
 	
+	
+	
+	
+# now we need further plugins to download and cache images: (in the file system)
+# ?? HOW should we do this ??
+# ionic plugin add org.apache.cordova.file
+
+
+# Caching images:
+# https://github.com/andrewmcgivery/ionic-ion-imageCacheFactory.git
+#
+
